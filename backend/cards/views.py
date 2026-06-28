@@ -41,13 +41,17 @@ class CardSetsView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        from django.db.models import Min
+        # Sort by the earliest card_id in each set (EB01-xxx < OP01-xxx < ST01-xxx)
+        # which gives the natural set-code order the user expects.
         sets = (
             Card.objects.exclude(set_name="")
+            .values("set_name")
+            .annotate(first_card_id=Min("card_id"))
+            .order_by("first_card_id")
             .values_list("set_name", flat=True)
-            .distinct()
-            .order_by("set_name")
         )
-        return Response(sorted(sets))
+        return Response(list(sets))
 
 
 class CardDetailView(generics.RetrieveAPIView):
