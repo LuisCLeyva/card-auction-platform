@@ -1,3 +1,10 @@
+export interface CardImage {
+  id: number;
+  url: string;
+  is_alternate: boolean;
+  order: number;
+}
+
 export interface Card {
   id: number;
   card_id: string;
@@ -14,8 +21,7 @@ export interface Card {
   feature: string;
   effect: string;
   set_name: string;
-  image_url: string | null;
-  alt_image_url: string | null;
+  images: CardImage[];
 }
 
 export interface CardCopy {

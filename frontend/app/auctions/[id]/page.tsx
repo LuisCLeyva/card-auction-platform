@@ -23,9 +23,9 @@ export default async function AuctionDetailPage({ params }: { params: { id: stri
   return (
     <div className="grid gap-8 md:grid-cols-2">
       <div className="relative aspect-[5/7] overflow-hidden rounded-lg border border-gold-dim/30 bg-ink-light">
-        {card.image_url && (
+        {card.images[0]?.url && (
           <Image
-            src={card.image_url}
+            src={card.images[0].url}
             alt={card.name}
             fill
             className="object-contain p-4"

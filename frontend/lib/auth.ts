@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 import { apiFetch } from "./api";
 
@@ -11,16 +11,18 @@ export interface CurrentUser {
   date_joined: string;
 }
 
+interface AuthContextValue {
+  user: CurrentUser | null;
+  loading: boolean;
+  setUser: (user: CurrentUser | null) => void;
+}
+
+export const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  loading: true,
+  setUser: () => {},
+});
+
 export function useCurrentUser() {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiFetch<CurrentUser>("/api/auth/me/")
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { user, loading, setUser };
+  return useContext(AuthContext);
 }

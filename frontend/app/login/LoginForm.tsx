@@ -6,10 +6,12 @@ import { useState } from "react";
 
 import { Field } from "@/components/Field";
 import { apiFetch } from "@/lib/api";
+import { useCurrentUser, type CurrentUser } from "@/lib/auth";
 
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const { setUser } = useCurrentUser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +26,8 @@ export function LoginForm() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+      const me = await apiFetch<CurrentUser>("/api/auth/me/");
+      setUser(me);
       router.push(params.get("next") ?? "/dashboard");
       router.refresh();
     } catch (err) {

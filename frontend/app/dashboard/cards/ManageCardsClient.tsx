@@ -87,9 +87,9 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
                 className="flex items-center justify-between gap-3 border-b border-gold-dim/10 p-2 last:border-b-0"
               >
                 <div className="flex items-center gap-2">
-                  {card.image_url && (
+                  {card.images[0]?.url && (
                     <div className="relative h-12 w-9 flex-shrink-0">
-                      <Image src={card.image_url} alt={card.name} fill className="object-contain" sizes="36px" />
+                      <Image src={card.images[0].url} alt={card.name} fill className="object-contain" sizes="36px" />
                     </div>
                   )}
                   <div>
@@ -124,9 +124,9 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
                 key={copy.id}
                 className="flex items-center gap-3 rounded border border-gold-dim/20 bg-ink-light p-3"
               >
-                {copy.card.image_url && (
+                {copy.card.images[0]?.url && (
                   <div className="relative h-20 w-14 flex-shrink-0">
-                    <Image src={copy.card.image_url} alt={copy.card.name} fill className="object-contain" sizes="56px" />
+                    <Image src={copy.card.images[0].url} alt={copy.card.name} fill className="object-contain" sizes="56px" />
                   </div>
                 )}
                 <div className="flex-1">

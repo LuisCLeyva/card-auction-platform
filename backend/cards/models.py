@@ -21,11 +21,13 @@ class Card(models.Model):
         SECRET_RARE = "SEC", "Secret Rare"
         LEADER_RARITY = "L", "Leader"
         PROMO = "P", "Promo"
+        TREASURY_RARE = "TR", "Treasury Rare"
+        SPECIAL_CARD = "SP CARD", "Special Card"
 
     card_id = models.CharField(max_length=20, unique=True, db_index=True)
     name = models.CharField(max_length=120, db_index=True)
     card_type = models.CharField(max_length=12, choices=CardType.choices)
-    rarity = models.CharField(max_length=5, choices=Rarity.choices)
+    rarity = models.CharField(max_length=10, choices=Rarity.choices)
 
     # CHARACTER/EVENT/STAGE cards have a numeric `cost`; LEADER cards have a
     # `life` total instead (sourced from the catalog's "LifeN" cost string).
@@ -41,9 +43,6 @@ class Card(models.Model):
     effect = models.TextField(blank=True)
     set_name = models.CharField(max_length=120, blank=True)
 
-    image = models.ImageField(upload_to="cards/", blank=True, null=True)
-    alt_image = models.ImageField(upload_to="cards/", blank=True, null=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -51,3 +50,18 @@ class Card(models.Model):
 
     def __str__(self):
         return f"{self.card_id} {self.name}"
+
+
+class CardImage(models.Model):
+    card = models.ForeignKey(Card, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="cards/")
+    is_alternate = models.BooleanField(default=False)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+        unique_together = [["card", "order"]]
+
+    def __str__(self):
+        kind = "AA" if self.is_alternate else "Standard"
+        return f"{self.card.card_id} {kind} (order={self.order})"

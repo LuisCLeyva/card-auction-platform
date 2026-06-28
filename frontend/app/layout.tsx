@@ -1,6 +1,7 @@
 import { Cinzel, Inter } from "next/font/google";
 import type { Metadata } from "next";
 
+import { AuthProvider } from "@/components/AuthProvider";
 import { Navbar } from "@/components/Navbar";
 
 import "./globals.css";
@@ -17,8 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <body className={`${body.variable} ${display.variable} min-h-screen font-sans text-parchment`}>
-        <Navbar />
-        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+        <AuthProvider>
+          <Navbar />
+          <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );

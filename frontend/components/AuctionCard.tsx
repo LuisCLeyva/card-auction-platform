@@ -14,9 +14,9 @@ export function AuctionCard({ auction }: { auction: Auction }) {
       className="group block overflow-hidden rounded-lg border border-gold-dim/30 bg-ink-light shadow-card transition hover:border-gold hover:shadow-glow"
     >
       <div className="relative aspect-[5/7] bg-ink">
-        {card.image_url ? (
+        {card.images[0]?.url ? (
           <Image
-            src={card.image_url}
+            src={card.images[0].url}
             alt={card.name}
             fill
             className="object-contain p-2 transition group-hover:scale-105"
