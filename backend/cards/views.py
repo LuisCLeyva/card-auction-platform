@@ -48,7 +48,7 @@ class CardSetsView(APIView):
             Card.objects.exclude(set_name="")
             .values("set_name")
             .annotate(first_card_id=Min("card_id"))
-            .order_by("first_card_id")
+            .order_by("-first_card_id")
             .values_list("set_name", flat=True)
         )
         return Response(list(sets))
