@@ -17,6 +17,13 @@ class CardCopy(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="card_copies"
     )
     card = models.ForeignKey("cards.Card", on_delete=models.PROTECT, related_name="copies")
+    card_image = models.ForeignKey(
+        "cards.CardImage",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="copies",
+    )
     condition = models.CharField(
         max_length=3, choices=Condition.choices, default=Condition.NEAR_MINT
     )

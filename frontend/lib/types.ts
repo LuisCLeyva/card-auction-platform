@@ -27,6 +27,7 @@ export interface Card {
 export interface CardCopy {
   id: number;
   card: Card;
+  card_image: CardImage | null;
   condition: "NM" | "LP" | "MP" | "HP" | "DMG";
   quantity: number;
   notes: string;

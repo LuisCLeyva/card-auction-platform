@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { apiFetch } from "@/lib/api";
-import type { Card, CardCopy, Paginated } from "@/lib/types";
+import type { Card, CardCopy, CardImage, Paginated } from "@/lib/types";
 
 const CONDITIONS: CardCopy["condition"][] = ["NM", "LP", "MP", "HP", "DMG"];
 
@@ -14,6 +14,9 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
   const [results, setResults] = useState<Card[]>([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // art picker state: null = no picker open
+  const [artPicker, setArtPicker] = useState<{ card: Card; selectedImage: CardImage } | null>(null);
 
   async function runSearch(query: string) {
     setSearch(query);
@@ -30,12 +33,26 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
     }
   }
 
-  async function addCard(card: Card) {
+  function selectCard(card: Card) {
+    if (card.images.length <= 1) {
+      addCard(card, card.images[0] ?? null);
+    } else {
+      setArtPicker({ card, selectedImage: card.images[0] });
+    }
+  }
+
+  async function addCard(card: Card, image: CardImage | null) {
     setError(null);
+    setArtPicker(null);
     try {
       const copy = await apiFetch<CardCopy>("/api/inventory/", {
         method: "POST",
-        body: JSON.stringify({ card_id: card.card_id, condition: "NM", quantity: 1 }),
+        body: JSON.stringify({
+          card_id: card.card_id,
+          condition: "NM",
+          quantity: 1,
+          card_image_id: image?.id ?? null,
+        }),
       });
       setCopies((prev) => [copy, ...prev]);
       setResults([]);
@@ -68,6 +85,8 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
     }
   }
 
+  const displayImage = (copy: CardCopy) => copy.card_image?.url ?? copy.card.images[0]?.url ?? null;
+
   return (
     <div className="space-y-8">
       <section>
@@ -96,11 +115,14 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
                     <p className="text-sm text-parchment">{card.name}</p>
                     <p className="text-xs text-parchment/50">
                       {card.card_id} · {card.rarity}
+                      {card.images.length > 1 && (
+                        <span className="ml-1 text-gold">· {card.images.length - 1} AA</span>
+                      )}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => addCard(card)}
+                  onClick={() => selectCard(card)}
                   className="rounded border border-gold-dim px-3 py-1 text-xs hover:border-gold hover:text-gold"
                 >
                   Add
@@ -110,6 +132,48 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
           </ul>
         )}
       </section>
+
+      {/* Art picker modal */}
+      {artPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="w-full max-w-md rounded-lg border border-gold-dim/30 bg-ink-light p-6">
+            <h3 className="mb-4 font-display text-lg text-gold-bright">Choose art variant</h3>
+            <p className="mb-4 text-sm text-parchment/60">{artPicker.card.name} · {artPicker.card.card_id}</p>
+            <div className="mb-6 flex flex-wrap gap-3">
+              {artPicker.card.images.map((img) => (
+                <button
+                  key={img.id}
+                  onClick={() => setArtPicker((p) => p ? { ...p, selectedImage: img } : null)}
+                  className={`relative h-32 w-24 overflow-hidden rounded border-2 transition ${
+                    artPicker.selectedImage.id === img.id
+                      ? "border-gold"
+                      : "border-gold-dim/30 hover:border-gold-dim"
+                  }`}
+                >
+                  <Image src={img.url} alt={img.is_alternate ? "Alternate Art" : "Standard"} fill className="object-contain p-1" sizes="96px" />
+                  <span className="absolute bottom-0 left-0 right-0 bg-ink/80 py-0.5 text-center text-xs text-parchment">
+                    {img.is_alternate ? `AA ${img.order}` : "Standard"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => addCard(artPicker.card, artPicker.selectedImage)}
+                className="flex-1 rounded bg-gold py-2 font-medium text-ink hover:bg-gold-bright"
+              >
+                Add to collection
+              </button>
+              <button
+                onClick={() => setArtPicker(null)}
+                className="rounded border border-gold-dim/40 px-4 py-2 text-sm hover:border-gold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
@@ -124,14 +188,19 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
                 key={copy.id}
                 className="flex items-center gap-3 rounded border border-gold-dim/20 bg-ink-light p-3"
               >
-                {copy.card.images[0]?.url && (
+                {displayImage(copy) && (
                   <div className="relative h-20 w-14 flex-shrink-0">
-                    <Image src={copy.card.images[0].url} alt={copy.card.name} fill className="object-contain" sizes="56px" />
+                    <Image src={displayImage(copy)!} alt={copy.card.name} fill className="object-contain" sizes="56px" />
                   </div>
                 )}
                 <div className="flex-1">
                   <p className="text-sm text-parchment">{copy.card.name}</p>
-                  <p className="text-xs text-parchment/50">{copy.card.card_id}</p>
+                  <p className="text-xs text-parchment/50">
+                    {copy.card.card_id}
+                    {copy.card_image?.is_alternate && (
+                      <span className="ml-1 text-gold">AA</span>
+                    )}
+                  </p>
                   <div className="mt-2 flex items-center gap-2">
                     <select
                       value={copy.condition}
