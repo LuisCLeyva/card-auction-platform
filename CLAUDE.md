@@ -9,7 +9,6 @@ All commands assume the stack is running (`make up` / `make up-d`). See `make he
 ### Stack lifecycle
 - `make up` / `make up-d` — build and start `db` + `backend` + `frontend` (foreground / detached)
 - `make down` — stop and remove containers but **keep** volumes (db data + media survive)
-- `make clear-cache` — clears the Next.js build cache volume (fixes stale chunk errors like `Cannot find module './418.js'`), keeps db data
 - `make clean` — `docker compose down -v`: stops containers **and destroys all volumes** (db data + media gone)
 - `make migrate` — apply Django migrations
 - `make makemigrations` — generate migrations after model changes (commit the generated files — they don't get created by tests)

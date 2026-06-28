@@ -1,4 +1,6 @@
 from rest_framework import generics, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import Card
 from .serializers import CardSerializer
@@ -14,7 +16,7 @@ class CardListView(generics.ListAPIView):
 
         search = params.get("search")
         if search:
-            qs = qs.filter(name__icontains=search)
+            qs = qs.filter(name__icontains=search) | qs.filter(card_id__icontains=search)
 
         card_type = params.get("card_type")
         if card_type:
@@ -28,7 +30,24 @@ class CardListView(generics.ListAPIView):
         if rarity:
             qs = qs.filter(rarity=rarity.upper())
 
+        set_name = params.get("set_name")
+        if set_name:
+            qs = qs.filter(set_name=set_name)
+
         return qs
+
+
+class CardSetsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        sets = (
+            Card.objects.exclude(set_name="")
+            .values_list("set_name", flat=True)
+            .distinct()
+            .order_by("set_name")
+        )
+        return Response(sorted(sets))
 
 
 class CardDetailView(generics.RetrieveAPIView):

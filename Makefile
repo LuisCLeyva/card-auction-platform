@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 .PHONY: help up up-d down build logs migrate makemigrations seed superuser \
-        close-auctions backend-shell frontend-shell backend-test frontend-test test clean clear-cache
+        close-auctions backend-shell frontend-shell backend-test frontend-test test clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/' | sort
@@ -50,11 +50,6 @@ frontend-test: ## Run frontend test suite (jest)
 	docker compose exec frontend npm test
 
 test: backend-test frontend-test ## Run both test suites
-
-clear-cache: ## Clear the Next.js build cache (fixes stale chunk errors, keeps db data)
-	docker compose down
-	docker volume rm $$(docker volume ls -q --filter name=frontend_next) 2>/dev/null || true
-	docker compose up -d
 
 clean: ## Stop containers and remove volumes (DESTROYS db data + media)
 	docker compose down -v

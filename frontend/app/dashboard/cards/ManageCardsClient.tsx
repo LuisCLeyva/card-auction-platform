@@ -1,36 +1,64 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 import type { Card, CardCopy, CardImage, Paginated } from "@/lib/types";
 
 const CONDITIONS: CardCopy["condition"][] = ["NM", "LP", "MP", "HP", "DMG"];
 
+const CARD_TYPES = ["CHARACTER", "LEADER", "EVENT", "STAGE"] as const;
+const RARITIES = ["C", "UC", "R", "SR", "SEC", "TR", "SP CARD", "L", "P"] as const;
+const COLORS = ["Red", "Blue", "Green", "Purple", "Black", "Yellow"] as const;
+
+interface Filters {
+  card_type: string;
+  rarity: string;
+  color: string;
+  set_name: string;
+}
+
 export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[] }) {
   const [copies, setCopies] = useState(initialCopies);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<Filters>({ card_type: "", rarity: "", color: "", set_name: "" });
   const [results, setResults] = useState<Card[]>([]);
   const [searching, setSearching] = useState(false);
+  const [sets, setSets] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  // art picker state: null = no picker open
   const [artPicker, setArtPicker] = useState<{ card: Card; selectedImage: CardImage } | null>(null);
 
-  async function runSearch(query: string) {
-    setSearch(query);
-    if (query.trim().length < 2) {
+  useEffect(() => {
+    apiFetch<string[]>("/api/cards/sets/").then(setSets).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const hasFilter = Object.values(filters).some(Boolean);
+    if (search.trim().length < 2 && !hasFilter) {
       setResults([]);
       return;
     }
+    const controller = new AbortController();
     setSearching(true);
-    try {
-      const data = await apiFetch<Paginated<Card>>(`/api/cards/?search=${encodeURIComponent(query)}`);
-      setResults(data.results);
-    } finally {
-      setSearching(false);
-    }
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (filters.card_type) params.set("card_type", filters.card_type);
+    if (filters.rarity) params.set("rarity", filters.rarity);
+    if (filters.color) params.set("color", filters.color);
+    if (filters.set_name) params.set("set_name", filters.set_name);
+    params.set("page_size", "50");
+
+    apiFetch<Paginated<Card>>(`/api/cards/?${params}`)
+      .then((data) => setResults(data.results))
+      .catch(() => {})
+      .finally(() => setSearching(false));
+
+    return () => controller.abort();
+  }, [search, filters]);
+
+  function setFilter(key: keyof Filters, value: string) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   }
 
   function selectCard(card: Card) {
@@ -57,6 +85,7 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
       setCopies((prev) => [copy, ...prev]);
       setResults([]);
       setSearch("");
+      setFilters({ card_type: "", rarity: "", color: "", set_name: "" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add card");
     }
@@ -86,18 +115,72 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
   }
 
   const displayImage = (copy: CardCopy) => copy.card_image?.url ?? copy.card.images[0]?.url ?? null;
+  const hasFilters = search.trim().length >= 2 || Object.values(filters).some(Boolean);
 
   return (
     <div className="space-y-8">
       <section>
         <h2 className="mb-2 font-display text-lg text-gold">Add a card to your collection</h2>
+
         <input
           value={search}
-          onChange={(e) => runSearch(e.target.value)}
-          placeholder="Search the catalog by name…"
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or card ID (e.g. OP08-001)…"
           className="w-full rounded border border-gold-dim/40 bg-ink px-3 py-2 text-parchment focus:border-gold focus:outline-none"
         />
+
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <select
+            value={filters.set_name}
+            onChange={(e) => setFilter("set_name", e.target.value)}
+            className="rounded border border-gold-dim/40 bg-ink px-2 py-1.5 text-xs text-parchment focus:border-gold focus:outline-none"
+          >
+            <option value="">All sets</option>
+            {sets.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.card_type}
+            onChange={(e) => setFilter("card_type", e.target.value)}
+            className="rounded border border-gold-dim/40 bg-ink px-2 py-1.5 text-xs text-parchment focus:border-gold focus:outline-none"
+          >
+            <option value="">All types</option>
+            {CARD_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.color}
+            onChange={(e) => setFilter("color", e.target.value)}
+            className="rounded border border-gold-dim/40 bg-ink px-2 py-1.5 text-xs text-parchment focus:border-gold focus:outline-none"
+          >
+            <option value="">All colors</option>
+            {COLORS.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.rarity}
+            onChange={(e) => setFilter("rarity", e.target.value)}
+            className="rounded border border-gold-dim/40 bg-ink px-2 py-1.5 text-xs text-parchment focus:border-gold focus:outline-none"
+          >
+            <option value="">All rarities</option>
+            {RARITIES.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+
         {searching && <p className="mt-2 text-sm text-parchment/50">Searching…</p>}
+
+        {!searching && hasFilters && results.length === 0 && (
+          <p className="mt-2 text-sm text-parchment/50">No cards found.</p>
+        )}
+
         {results.length > 0 && (
           <ul className="mt-2 max-h-72 overflow-y-auto rounded border border-gold-dim/20">
             {results.map((card) => (
@@ -114,7 +197,7 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
                   <div>
                     <p className="text-sm text-parchment">{card.name}</p>
                     <p className="text-xs text-parchment/50">
-                      {card.card_id} · {card.rarity}
+                      {card.card_id} · {card.rarity} · {card.color}
                       {card.images.length > 1 && (
                         <span className="ml-1 text-gold">· {card.images.length - 1} AA</span>
                       )}
@@ -211,9 +294,7 @@ export function ManageCardsClient({ initialCopies }: { initialCopies: CardCopy[]
                       className="rounded border border-gold-dim/40 bg-ink px-2 py-1 text-xs text-parchment disabled:opacity-50"
                     >
                       {CONDITIONS.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
+                        <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                     <input
