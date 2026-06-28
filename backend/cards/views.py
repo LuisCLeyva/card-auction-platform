@@ -42,16 +42,21 @@ class CardSetsView(APIView):
 
     def get(self, request):
         from django.db.models import Min
-        # Sort by the earliest card_id in each set (EB01-xxx < OP01-xxx < ST01-xxx)
-        # which gives the natural set-code order the user expects.
-        sets = (
+
+        PREFIX_ORDER = {"OP": 0, "ST": 1, "EB": 2}
+
+        def sort_key(row):
+            code = row["first_card_id"][:4]  # e.g. "OP01"
+            prefix = code[:2]
+            number = int(code[2:]) if code[2:].isdigit() else 0
+            return (PREFIX_ORDER.get(prefix, 99), -number)
+
+        rows = (
             Card.objects.exclude(set_name="")
             .values("set_name")
             .annotate(first_card_id=Min("card_id"))
-            .order_by("-first_card_id")
-            .values_list("set_name", flat=True)
         )
-        return Response(list(sets))
+        return Response([r["set_name"] for r in sorted(rows, key=sort_key)])
 
 
 class CardDetailView(generics.RetrieveAPIView):
