@@ -1,0 +1,28 @@
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+backend/venv/
+backend/.venv/
+__pycache__/
+*.pyc
+backend/staticfiles/
+backend/media/
+
+# Django
+backend/db.sqlite3
+*.log
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
